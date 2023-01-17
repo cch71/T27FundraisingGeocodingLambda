@@ -17,9 +17,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	//"github.com/codingsince1985/geo-golang/geocod"
-	// "github.com/codingsince1985/geo-golang/locationiq"
-
 	"github.com/codingsince1985/geo-golang"
 	"github.com/codingsince1985/geo-golang/chained"
 	"github.com/codingsince1985/geo-golang/mapbox"
@@ -127,11 +124,6 @@ func getGeocoder() *geo.Geocoder {
 		mapbox.Geocoder(os.Getenv("MAPBOX_API_KEY")),
 	)
 
-	// Other Geocoders to look at if we need to...
-	//"github.com/codingsince1985/geo-golang/geocod"
-	// "github.com/codingsince1985/geo-golang/locationiq"
-	// geocod.Geocoder(os.Getenv("GEOCOD_API_KEY")),
-	// locationiq.Geocoder(os.Getenv("LOCATIONIQ_API_KEY"), zoom)
 	return &geocoder
 }
 

@@ -21,7 +21,7 @@ dist: lambda
 		cd dist && zip function.zip bootstrap root.crt
 
 deploy: dist
-		aws lambda update-function-code --function-name ${GEOCODER_LAMBDA_FUNCTION_NAME} --zip-file fileb://${PWD}/dist/function.zip
+		op plugin run -- aws lambda update-function-code --function-name ${GEOCODER_LAMBDA_FUNCTION_NAME} --zip-file fileb://${PWD}/dist/function.zip
 
 run:
 		aws-sam-local local start-api

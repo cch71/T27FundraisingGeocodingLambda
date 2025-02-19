@@ -30,8 +30,7 @@ import (
 	geojson "github.com/paulmach/go.geojson"
 )
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 var (
 	dbMutex        sync.Mutex
 	GEO_BOUNDARIES = geom.Extent{30.406366, -97.923777, 30.656545, -97.343905}
@@ -40,8 +39,7 @@ var (
 	S3CLNT         *s3.Client
 )
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func Init() error {
 	if DB == nil {
 		dbMutex.Lock()
@@ -69,8 +67,7 @@ func Init() error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func Deinit() {
 	if DB != nil {
 		DB.Close()
@@ -89,10 +86,8 @@ func getS3Client() (*s3.Client, error) {
 	return s3Client, nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func makeDbConnection() (*pgxpool.Pool, error) {
-
 	dbId := os.Getenv("DB_ID")
 	dbToken := os.Getenv("DB_TOKEN")
 	dbHost := os.Getenv("DB_HOST")
@@ -116,8 +111,7 @@ func makeDbConnection() (*pgxpool.Pool, error) {
 	return conn, nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func getGeocoder() *geo.Geocoder {
 	geocoder := chained.Geocoder(
 		openstreetmap.Geocoder(),
@@ -127,12 +121,11 @@ func getGeocoder() *geo.Geocoder {
 	return &geocoder
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func tryGeocoding(addr *string) (string, string) {
 	location, _ := (*GEOCODER).Geocode(*addr)
 	if location != nil {
-		//log.Printf("%s location is (%.7f, %.7f)\n", *addr, location.Lat, location.Lng)
+		// log.Printf("%s location is (%.7f, %.7f)\n", *addr, location.Lat, location.Lng)
 		if GEO_BOUNDARIES.ContainsPoint(geom.Point{location.Lat, location.Lng}) {
 			return fmt.Sprintf("%.7f", location.Lat), fmt.Sprintf("%.7f", location.Lng)
 		} else {
@@ -144,8 +137,7 @@ func tryGeocoding(addr *string) (string, string) {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 type Location struct {
 	Id           string
 	Addr         string
@@ -156,13 +148,13 @@ type Location struct {
 	Lng          string
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
-func getOrdersWithoutKnownLocations(ctx context.Context) ([]Location, error) {
+// //////////////////////////////////////////////////////////////////////////
+func getOrdersWithoutKnownLocations(_ context.Context) ([]Location, error) {
 	log.Println("Getting orders with unknown locations")
 
-	sqlCmd := "SELECT order_id, customer_addr1, customer_addr2, customer_city, customer_zipcode, customer_neighborhood" +
-		" FROM mulch_orders WHERE known_addr_id IS NULL AND customer_neighborhood NOT LIKE 'Out of Area%'"
+	sqlCmd := "SELECT order_id, customer_addr1, customer_addr2, neighborhoods.city, neighborhoods.zipcode, customer_neighborhood" +
+		" FROM mulch_orders LEFT JOIN neighborhoods ON mulch_orders.customer_neighborhood = neighborhoods.name" +
+		" WHERE known_addr_id IS NULL AND customer_neighborhood NOT LIKE 'Out of Area%'"
 
 	rows, err := DB.Query(context.Background(), sqlCmd)
 	if err != nil {
@@ -200,9 +192,8 @@ func getOrdersWithoutKnownLocations(ctx context.Context) ([]Location, error) {
 	return results, nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
-func getKnownLocations(ctx context.Context) ([]Location, error) {
+// //////////////////////////////////////////////////////////////////////////
+func getKnownLocations(_ context.Context) ([]Location, error) {
 	log.Println("Getting known locations")
 
 	sqlCmd := "SELECT id, addr, city, zipcode, lat, lng FROM known_addrs"
@@ -239,8 +230,7 @@ func getKnownLocations(ctx context.Context) ([]Location, error) {
 	return results, nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func addNewLoc(ctx context.Context, loc Location, trxn *pgx.Tx) (string, error) {
 	newId := uuid.New().String()
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -258,8 +248,7 @@ func addNewLoc(ctx context.Context, loc Location, trxn *pgx.Tx) (string, error) 
 	return newId, nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func updateOrder(ctx context.Context, locId string, orderId string, trxn *pgx.Tx) error {
 	log.Printf("Updating mulch order associating locid to orderid %s -> %s", locId, orderId)
 	sqlCmd := "UPDATE mulch_orders SET known_addr_id=$1::uuid WHERE order_id=$2"
@@ -271,10 +260,8 @@ func updateOrder(ctx context.Context, locId string, orderId string, trxn *pgx.Tx
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func convertLatLngStrToGeoJsonPt(lat_str string, lng_str string) ([]float64, error) {
-
 	lat, err := strconv.ParseFloat(lat_str, 64)
 	if err != nil {
 		return []float64{}, err
@@ -287,10 +274,8 @@ func convertLatLngStrToGeoJsonPt(lat_str string, lng_str string) ([]float64, err
 	return []float64{lng, lat}, nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func updateDbLocations(ctx context.Context) error {
-
 	collection, err := getGeoJson(ctx)
 	if err != nil {
 		log.Printf("Failed getting GeoJSON: %v", err)
@@ -301,7 +286,7 @@ func updateDbLocations(ctx context.Context) error {
 	// Get Unkown orders
 	unknownLocs, err := getOrdersWithoutKnownLocations(ctx)
 	if err != nil {
-		//log.Println("Filed getting orders with unknown location query failed", err)
+		// log.Println("Filed getting orders with unknown location query failed", err)
 		return err
 	}
 	if len(unknownLocs) == 0 {
@@ -312,7 +297,7 @@ func updateDbLocations(ctx context.Context) error {
 	// Get Known Orders
 	knownLocs, err := getKnownLocations(ctx)
 	if err != nil {
-		//log.Println("Filed getting orders with unknown location query failed", err)
+		// log.Println("Failed getting orders with unknown location query failed", err)
 		return err
 	}
 
@@ -320,7 +305,7 @@ func updateDbLocations(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	//defer trxn.Rollback(context.Background())
+	// defer trxn.Rollback(context.Background())
 	// See if known_locs has unkown_loc
 	for _, unknownLoc := range unknownLocs {
 		resolvedLocUuid := ""
@@ -334,7 +319,6 @@ func updateDbLocations(ctx context.Context) error {
 				unknownLoc.Lng = knownLoc.Lng
 				break
 			}
-
 		}
 
 		if len(resolvedLocUuid) == 0 {
@@ -359,7 +343,6 @@ func updateDbLocations(ctx context.Context) error {
 			if err != nil {
 				log.Println("Failed to convert lat/lng string to float: ", unknownLoc)
 			} else {
-
 				collection.AddFeature(geojson.NewPointFeature(coords))
 			}
 		}
@@ -383,10 +366,9 @@ func updateDbLocations(ctx context.Context) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func getGeoJson(ctx context.Context) (*geojson.FeatureCollection, error) {
-	//geoJsonUri := "s3://t27fundraiser/T27FundraiserGeoJSON.json"
+	// geoJsonUri := "s3://t27fundraiser/T27FundraiserGeoJSON.json"
 	bucketName := os.Getenv("T27FR_S3_BUCKETNAME")
 	objectKey := os.Getenv("T27FR_S3_GEOJSON")
 
@@ -411,13 +393,11 @@ func getGeoJson(ctx context.Context) (*geojson.FeatureCollection, error) {
 		return nil, err
 	}
 	return featureCollection, nil
-
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func saveGeoJson(ctx context.Context, collection *geojson.FeatureCollection) error {
-	//geoJsonUri := "s3://t27fundraiser/T27FundraiserGeoJSON.json"
+	// geoJsonUri := "s3://t27fundraiser/T27FundraiserGeoJSON.json"
 	bucketName := os.Getenv("T27FR_S3_BUCKETNAME")
 	objectKey := os.Getenv("T27FR_S3_GEOJSON")
 
@@ -439,11 +419,9 @@ func saveGeoJson(ctx context.Context, collection *geojson.FeatureCollection) err
 	}
 
 	return nil
-
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func regenGeoJSON(ctx context.Context) error {
 	log.Println("Getting known locations")
 
@@ -493,17 +471,14 @@ func regenGeoJSON(ctx context.Context) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 type UpdateGeoJsonFlags struct {
 	DoCompleteRegen bool
 	UpdateDb        bool
 }
 
-////////////////////////////////////////////////////////////////////////////
-//
+// //////////////////////////////////////////////////////////////////////////
 func UpdateGeoJson(ctx context.Context, flags UpdateGeoJsonFlags) error {
-
 	if flags.UpdateDb {
 		err := updateDbLocations(ctx)
 		if err != nil {

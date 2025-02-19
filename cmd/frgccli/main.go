@@ -1,21 +1,16 @@
-//usr/bin/env go run "$0" "$@"; exit
-
+// usr/bin/env go run "$0" "$@"; exit
 package main
 
 import (
 	"context"
 	"log"
-	"os"
-	"path"
 
 	"github.com/cch71/T27FundraisingGeocoderLambda/frgeocoder"
 
 	"github.com/joho/godotenv"
 )
 
-var (
-	_ = godotenv.Load(path.Join(os.Getenv("HOME"), ".t27fr", "credentials"))
-)
+var _ = godotenv.Load()
 
 func main() {
 	ctx := context.Background()

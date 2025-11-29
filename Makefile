@@ -10,12 +10,6 @@ clean:
 		@rm -rf dist
 		@mkdir -p dist
 
-update-mods:
-	cd frgeocoder && go get -u ./... && go mod tidy
-	cd cmd/lambda && go get -u ./... && go mod tidy
-	cd cmd/frgccli && go get -u ./... && go mod tidy
-	cd cmd/lambda && go get -u ./... && go mod tidy
-
 lambda: clean
 		cd ${MK_DIR}/cmd/lambda && GOOS=linux CGO_ENABLED=0 GOARCH=arm64 go build -ldflags="-s -w" -o ${DIST_DIR}/bootstrap
 
@@ -40,12 +34,15 @@ install:
 install-dev:
 		go get github.com/awslabs/aws-sam-local
 
+tidy:
+	cd frgeocoder && go mod tidy
+	cd cmd/lambda && go mod tidy
+	cd cmd/frgccli && go mod tidy
+
 update-mods:
 	cd frgeocoder && go get -u ./... && go mod tidy
 	cd cmd/lambda && go get -u ./... && go mod tidy
 	cd cmd/frgccli && go get -u ./... && go mod tidy
 
-
 test:
 		go test ./... --cover
-

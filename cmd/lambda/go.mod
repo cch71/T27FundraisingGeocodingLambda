@@ -1,6 +1,7 @@
 module T27FundraisingGeocoderLambda
 
-go 1.23
+go 1.24.0
+
 toolchain go1.24.1
 
 require (
@@ -35,9 +36,9 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/paulmach/go.geojson v1.5.0 // indirect
-	golang.org/x/crypto v0.35.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 )
 
 replace github.com/cch71/T27FundraisingGeocoderLambda/frgeocoder => ../../frgeocoder
